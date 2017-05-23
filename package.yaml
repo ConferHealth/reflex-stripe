@@ -1,0 +1,36 @@
+name:                reflex-stripe
+version:             0.0.1
+synopsis:            Reflex integration for the Stripe client library.
+description:         Please see README.md
+homepage:            https://github.com/ConferHealth/reflex-stripe#readme
+license:             BSD3
+author:              Confer Health, Inc
+maintainer:          oss@confer.care
+copyright:           2017 Confer Health, Inc.
+category:            Reflex
+
+default-extensions:
+  - DataKinds
+  - FlexibleContexts
+  - LambdaCase
+  - NamedFieldPuns
+  - OverloadedStrings
+  - RankNTypes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - TemplateHaskell
+
+dependencies:
+  - base
+  - data-default
+  - jsaddle
+  - lens
+  - mtl
+  - reflex-dom
+  - text
+
+ghc-options:
+  - -Wall -O2
+
+library:
+  source-dirs: src
