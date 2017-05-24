@@ -11,14 +11,19 @@ category:            Reflex
 
 default-extensions:
   - DataKinds
+  - DeriveFunctor
   - FlexibleContexts
+  - FlexibleInstances
+  - GADTs
   - LambdaCase
   - NamedFieldPuns
   - OverloadedStrings
   - RankNTypes
   - RecordWildCards
   - ScopedTypeVariables
+  - StandaloneDeriving
   - TemplateHaskell
+  - TypeFamilies
 
 dependencies:
   - base

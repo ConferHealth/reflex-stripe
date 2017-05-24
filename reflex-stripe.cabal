@@ -19,7 +19,7 @@ cabal-version:  >= 1.10
 library
   hs-source-dirs:
       src
-  default-extensions: FlexibleContexts LambdaCase NamedFieldPuns OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TemplateHaskell
+  default-extensions: DataKinds DeriveFunctor FlexibleContexts FlexibleInstances GADTs LambdaCase NamedFieldPuns OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TemplateHaskell TypeFamilies
   ghc-options: -Wall -O2
   build-depends:
       base

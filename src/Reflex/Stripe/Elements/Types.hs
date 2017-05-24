@@ -10,7 +10,7 @@ import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
 import GHCJS.Marshal (ToJSVal, toJSVal)
 import qualified JavaScript.Object.Internal as Obj
-import Language.Javascript.JSaddle (function, JSM, JSVal, js0, js2, jsNull, MonadJSM, liftJSM, val)
+import Language.Javascript.JSaddle (FromJSVal, fromJSVal, fromJSValUnchecked, function, JSM, JSVal, js, js0, js2, jsNull, MonadJSM, liftJSM)
 import Prelude
 import Reflex.Dom (Event, TriggerEvent, newTriggerEvent)
 
@@ -138,15 +138,27 @@ class IsStripeElement el where
 
 -- |Remove focus from a given Stripe element
 blurStripeElement :: (IsStripeElement el, MonadJSM m) => el -> m ()
-blurStripeElement el = void . liftJSM $ val (stripeElement el) ^. js0 ("blur" :: Text)
+blurStripeElement el = void . liftJSM $ stripeElement el ^. js0 ("blur" :: Text)
 
 -- |Clear value from a given Stripe element
 clearStripeElement :: (IsStripeElement el, MonadJSM m) => el -> m ()
-clearStripeElement el = void . liftJSM $ val (stripeElement el) ^. js0 ("clear" :: Text)
+clearStripeElement el = void . liftJSM $ stripeElement el ^. js0 ("clear" :: Text)
 
 -- |Focus on a given Stripe element
 focusStripeElement :: (IsStripeElement el, MonadJSM m) => el -> m ()
-focusStripeElement el = void . liftJSM $ val (stripeElement el) ^. js0 ("focus" :: Text)
+focusStripeElement el = void . liftJSM $ stripeElement el ^. js0 ("focus" :: Text)
+
+-- |Structure reporting a validation error in an Stripe Element.
+data StripeElementError = StripeElementError
+  { _stripeElementError_message :: Text
+  , _stripeElementError_code :: Text
+  }
+
+instance FromJSVal StripeElementError where
+  fromJSVal jsv = do
+    _stripeElementError_message <- fromJSValUnchecked =<< jsv ^. js ("message" :: Text)
+    _stripeElementError_code <- fromJSValUnchecked =<< jsv ^. js ("code" :: Text)
+    pure . Just $ StripeElementError {..}
 
 -- |Generic way to bind to an event using @Element.on@.
 getStripeElementEvent :: (IsStripeElement el, MonadJSM m, TriggerEvent t m) => Text -> (JSVal -> JSM a) -> el -> m (Event t a)
@@ -159,7 +171,7 @@ getStripeElementEvent eventType parseEvent el = do
       a <- parseEvent (fromMaybe jsNull $ listToMaybe args)
       liftIO $ trigger a
     -- FIXME Function never gets explicitly freed
-    val element ^. js2 ("on" :: Text) eventType funJsv
+    void $ element ^. js2 ("on" :: Text) eventType funJsv
   pure ev
 
 -- |Retrieve an Event which fires whenever the given Stripe Element becomes blurred
