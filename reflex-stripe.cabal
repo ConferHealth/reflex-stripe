@@ -29,9 +29,12 @@ library
     , mtl
     , reflex-dom
     , text
+    , time
   exposed-modules:
       Reflex.Stripe
       Reflex.Stripe.Elements.Card
+      Reflex.Stripe.Elements.Object
       Reflex.Stripe.Elements.Types
       Reflex.Stripe.Object
+      Reflex.Stripe.Types
   default-language: Haskell2010

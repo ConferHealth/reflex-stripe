@@ -3,7 +3,6 @@ module Reflex.Stripe.Elements.Card where
 import Control.Concurrent.MVar (putMVar, takeMVar)
 import Control.Lens ((^.))
 import Control.Lens.TH (makeLenses)
-import Control.Monad (liftM)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Data.Default (Default, def)
 import Data.Functor (void)
@@ -115,16 +114,16 @@ data StripeCardElementChange (postalCode :: HasPostalCodeField) = StripeCardElem
 -- both 'StripeCardElementChange' variants.
 parseStripeCardElementChange :: (JSVal -> JSM (WithPostalCodeField postalCode Text)) -> JSVal -> JSM (Maybe (StripeCardElementChange postalCode))
 parseStripeCardElementChange parsePostalCode jsv = do
-  _stripeCardElementChange_empty <- fromJSValUnchecked =<< jsv ^. js ("empty" :: Text)
-  _stripeCardElementChange_complete <- fromJSValUnchecked =<< jsv ^. js ("complete" :: Text)
-  _stripeCardElementChange_brand <- fromJSVal =<< jsv ^. js ("brand" :: Text)
-  _stripeCardElementChange_error <- fromJSValUnchecked =<< jsv ^. js ("error" :: Text)
+  _stripeCardElementChange_empty      <- fromJSValUnchecked =<< jsv ^. js ("empty" :: Text)
+  _stripeCardElementChange_complete   <- fromJSValUnchecked =<< jsv ^. js ("complete" :: Text)
+  _stripeCardElementChange_brand      <- fromJSVal          =<< jsv ^. js ("brand" :: Text)
+  _stripeCardElementChange_error      <- fromJSValUnchecked =<< jsv ^. js ("error" :: Text)
   _stripeCardElementChange_postalCode <- parsePostalCode jsv
   pure . Just $ StripeCardElementChange {..}
 
 instance FromJSVal (StripeCardElementChange 'PostalCodeEnabled) where
   fromJSVal = parseStripeCardElementChange $ \ jsv ->
-    liftM PostalCode $ fromJSValUnchecked =<< jsv ^. js ("value" :: Text) ^. js ("postalCode" :: Text)
+    fmap PostalCode $ fromJSValUnchecked =<< jsv ^. js ("value" :: Text) ^. js ("postalCode" :: Text)
 
 -- |Get an Event which fires each time the state of a Stripe combined card element changes.
 getStripeCardElementOnChange

@@ -33,6 +33,7 @@ dependencies:
   - mtl
   - reflex-dom
   - text
+  - time
 
 ghc-options:
   - -Wall -O2
