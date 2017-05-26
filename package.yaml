@@ -27,6 +27,7 @@ default-extensions:
 
 dependencies:
   - base
+  - containers
   - data-default
   - jsaddle
   - lens
@@ -40,3 +41,13 @@ ghc-options:
 
 library:
   source-dirs: src
+
+executables:
+  reflex-stripe-example:
+    source-dirs:      example
+    main:             Main.hs
+    ghc-options:      -threaded -rtsopts -with-rtsopts=-N
+    dependencies:     reflex-stripe
+    default-extensions:
+      - RecursiveDo
+      - TupleSections

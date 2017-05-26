@@ -5,8 +5,7 @@ import Control.Lens ((^.))
 import Data.Default (Default, def)
 import Data.Foldable (for_)
 import Data.Text (Text)
-import qualified JavaScript.Object.Internal as Obj
-import Language.Javascript.JSaddle (JSVal, js1, MonadJSM, liftJSM, ToJSVal, toJSVal)
+import Language.Javascript.JSaddle (JSVal, js1, MonadJSM, liftJSM, ToJSVal, toJSVal, create, setProp)
 import Reflex.Stripe.Object (Stripe(Stripe), _stripe_object, _stripe_nextElementId)
 
 -- |Structure to configure a custom font face to use with Stripe Elements
@@ -20,13 +19,13 @@ data StripeElementFontConfig = StripeElementFontConfig
 
 instance ToJSVal StripeElementFontConfig where
   toJSVal (StripeElementFontConfig {..}) = do
-    o@(Obj.Object oJsv) <- Obj.create
-    toJSVal _stripeElementFontConfig_family >>= \ jsv -> Obj.setProp "family" jsv o
-    toJSVal _stripeElementFontConfig_src    >>= \ jsv -> Obj.setProp "src" jsv o
-    for_ _stripeElementFontConfig_style        $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "style" jsv o
-    for_ _stripeElementFontConfig_unicodeRange $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "unicodeRange" jsv o
-    for_ _stripeElementFontConfig_weight       $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "weight" jsv o
-    pure oJsv
+    o <- create
+    toJSVal _stripeElementFontConfig_family >>= \ jsv -> setProp "family" jsv o
+    toJSVal _stripeElementFontConfig_src    >>= \ jsv -> setProp "src" jsv o
+    for_ _stripeElementFontConfig_style        $ \ v -> toJSVal v >>= \ jsv -> setProp "style" jsv o
+    for_ _stripeElementFontConfig_unicodeRange $ \ v -> toJSVal v >>= \ jsv -> setProp "unicodeRange" jsv o
+    for_ _stripeElementFontConfig_weight       $ \ v -> toJSVal v >>= \ jsv -> setProp "weight" jsv o
+    toJSVal o
 
 -- |Structure holding configuration parameters when initializing Stripe Elements
 data StripeElementsConfig = StripeElementsConfig
@@ -36,6 +35,13 @@ data StripeElementsConfig = StripeElementsConfig
   , _stripeElementsConfig_locale :: Maybe Text
   -- ^What locale to use for placeholders and error messages. @Nothing@ means infer locale automatically from the browser.
   }
+
+instance ToJSVal StripeElementsConfig where
+  toJSVal (StripeElementsConfig {..}) = do
+    o <- create
+    toJSVal _stripeElementsConfig_fonts >>= \ jsv -> setProp "fonts" jsv o
+    for_ _stripeElementsConfig_locale $ \ v -> toJSVal v >>= \ jsv -> setProp "locale" jsv o
+    toJSVal o
 
 instance Default StripeElementsConfig where
   def = StripeElementsConfig [] Nothing
@@ -50,12 +56,9 @@ data StripeElements = StripeElements
   }
 
 -- |Initialize Stripe Elements using an already initialized Stripe object.
-initStripeElements :: MonadJSM m => StripeElementsConfig -> Stripe -> m StripeElements
-initStripeElements (StripeElementsConfig {..}) (Stripe { _stripe_object, _stripe_nextElementId }) = liftJSM $ do
-  elementsOptions <- Obj.create
-  toJSVal _stripeElementsConfig_fonts >>= \ jsv -> Obj.setProp "fonts" jsv elementsOptions
-  toJSVal _stripeElementsConfig_locale >>= \ jsv -> Obj.setProp "locale" jsv elementsOptions
-  _stripeElements_object <- _stripe_object ^. js1 ("elements" :: Text) elementsOptions
+initStripeElements :: MonadJSM m => Stripe -> StripeElementsConfig -> m StripeElements
+initStripeElements (Stripe { _stripe_object, _stripe_nextElementId }) config = liftJSM $ do
+  _stripeElements_object <- _stripe_object ^. js1 ("elements" :: Text) config
   let _stripeElements_nextElementId = _stripe_nextElementId
   pure StripeElements {..}
 

@@ -2,15 +2,20 @@ module Reflex.Stripe.Elements.Types where
 
 import Control.Lens ((^.))
 import Control.Lens.TH (makeLenses)
+import Control.Monad ((<=<))
 import Control.Monad.Trans (liftIO)
 import Data.Default (Default, def)
 import Data.Foldable (for_)
 import Data.Functor (void)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
-import GHCJS.Marshal (ToJSVal, toJSVal)
-import qualified JavaScript.Object.Internal as Obj
-import Language.Javascript.JSaddle (FromJSVal, fromJSVal, fromJSValUnchecked, function, JSM, JSVal, js, js0, js2, jsNull, MonadJSM, liftJSM)
+import Language.Javascript.JSaddle
+  ( FromJSVal, fromJSVal, fromJSValUnchecked, ToJSVal, toJSVal
+  , function
+  , JSVal, JSM, MonadJSM, liftJSM
+  , js0, js2, jsNull
+  , Object, create, makeObject, setProp, unsafeGetProp, maybeNullOrUndefined'
+  )
 import Prelude
 import Reflex.Dom (Event, TriggerEvent, newTriggerEvent)
 
@@ -34,30 +39,31 @@ data StripeElementStyle = StripeElementStyle
   , _stripeElementStyle_selectionStyle      :: Maybe StripeElementStyle
   , _stripeElementStyle_webkitAutofillStyle :: Maybe StripeElementStyle
   }
+  deriving (Eq, Show)
 
 makeLenses ''StripeElementStyle
 
 instance ToJSVal StripeElementStyle where
   toJSVal (StripeElementStyle {..}) = do
-    o@(Obj.Object oJsv) <- Obj.create
-    for_ _stripeElementStyle_color               $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "color"             jsv o
-    for_ _stripeElementStyle_fontFamily          $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "fontFamily"        jsv o
-    for_ _stripeElementStyle_fontSize            $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "fontSize"          jsv o
-    for_ _stripeElementStyle_fontSmoothing       $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "fontSmoothing"     jsv o
-    for_ _stripeElementStyle_fontStyle           $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "fontStyle"         jsv o
-    for_ _stripeElementStyle_fontVariant         $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "fontVariant"       jsv o
-    for_ _stripeElementStyle_iconColor           $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "iconColor"         jsv o
-    for_ _stripeElementStyle_lineHeight          $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "lineHeight"        jsv o
-    for_ _stripeElementStyle_letterSpacing       $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "letterSpacing"     jsv o
-    for_ _stripeElementStyle_textDecoration      $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "textDecoration"    jsv o
-    for_ _stripeElementStyle_textShadow          $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "textShadow"        jsv o
-    for_ _stripeElementStyle_textTransform       $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "textTransform"     jsv o
-    for_ _stripeElementStyle_hoverStyle          $ \ s -> toJSVal s >>= \ jsv -> Obj.setProp ":hover"            jsv o
-    for_ _stripeElementStyle_focusStyle          $ \ s -> toJSVal s >>= \ jsv -> Obj.setProp ":focus"            jsv o
-    for_ _stripeElementStyle_placeholderStyle    $ \ s -> toJSVal s >>= \ jsv -> Obj.setProp "::placeholder"     jsv o
-    for_ _stripeElementStyle_selectionStyle      $ \ s -> toJSVal s >>= \ jsv -> Obj.setProp "::selection"       jsv o
-    for_ _stripeElementStyle_webkitAutofillStyle $ \ s -> toJSVal s >>= \ jsv -> Obj.setProp ":-webkit-autofill" jsv o
-    pure oJsv
+    o <- create
+    for_ _stripeElementStyle_color               $ \ v -> toJSVal v >>= \ jsv -> setProp "color"             jsv o
+    for_ _stripeElementStyle_fontFamily          $ \ v -> toJSVal v >>= \ jsv -> setProp "fontFamily"        jsv o
+    for_ _stripeElementStyle_fontSize            $ \ v -> toJSVal v >>= \ jsv -> setProp "fontSize"          jsv o
+    for_ _stripeElementStyle_fontSmoothing       $ \ v -> toJSVal v >>= \ jsv -> setProp "fontSmoothing"     jsv o
+    for_ _stripeElementStyle_fontStyle           $ \ v -> toJSVal v >>= \ jsv -> setProp "fontStyle"         jsv o
+    for_ _stripeElementStyle_fontVariant         $ \ v -> toJSVal v >>= \ jsv -> setProp "fontVariant"       jsv o
+    for_ _stripeElementStyle_iconColor           $ \ v -> toJSVal v >>= \ jsv -> setProp "iconColor"         jsv o
+    for_ _stripeElementStyle_lineHeight          $ \ v -> toJSVal v >>= \ jsv -> setProp "lineHeight"        jsv o
+    for_ _stripeElementStyle_letterSpacing       $ \ v -> toJSVal v >>= \ jsv -> setProp "letterSpacing"     jsv o
+    for_ _stripeElementStyle_textDecoration      $ \ v -> toJSVal v >>= \ jsv -> setProp "textDecoration"    jsv o
+    for_ _stripeElementStyle_textShadow          $ \ v -> toJSVal v >>= \ jsv -> setProp "textShadow"        jsv o
+    for_ _stripeElementStyle_textTransform       $ \ v -> toJSVal v >>= \ jsv -> setProp "textTransform"     jsv o
+    for_ _stripeElementStyle_hoverStyle          $ \ s -> toJSVal s >>= \ jsv -> setProp ":hover"            jsv o
+    for_ _stripeElementStyle_focusStyle          $ \ s -> toJSVal s >>= \ jsv -> setProp ":focus"            jsv o
+    for_ _stripeElementStyle_placeholderStyle    $ \ s -> toJSVal s >>= \ jsv -> setProp "::placeholder"     jsv o
+    for_ _stripeElementStyle_selectionStyle      $ \ s -> toJSVal s >>= \ jsv -> setProp "::selection"       jsv o
+    for_ _stripeElementStyle_webkitAutofillStyle $ \ s -> toJSVal s >>= \ jsv -> setProp ":-webkit-autofill" jsv o
+    toJSVal o
 
 -- |How icons should be rendered within a Stripe element, either monochromatic solid or shaded (default)
 data StripeIconStyle
@@ -97,35 +103,38 @@ data StripeElementConfig = StripeElementConfig
   , _stripeElementConfig_invalidStyle :: Maybe StripeElementStyle
   -- ^CSS style properties to apply when the element has a value but is invalid.
   }
+  deriving (Eq, Show)
 
 makeLenses ''StripeElementConfig
 
 -- |Convert a 'StripeElementConfig' to a JS object. Identical to 'toJSVal' but returns the 'Obj.Object' wrapper, rather than a 'JSVal'.
-stripeElementConfigToObject :: StripeElementConfig -> JSM Obj.Object
+stripeElementConfigToObject :: StripeElementConfig -> JSM Object
 stripeElementConfigToObject (StripeElementConfig {..}) = do
-  classes@(Obj.Object classesJsv) <- Obj.create
-  for_ _stripeElementConfig_baseClass           $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "base"           jsv classes
-  for_ _stripeElementConfig_completeClass       $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "complete"       jsv classes
-  for_ _stripeElementConfig_emptyClass          $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "empty"          jsv classes
-  for_ _stripeElementConfig_focusClass          $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "focus"          jsv classes
-  for_ _stripeElementConfig_invalidClass        $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "invalid"        jsv classes
-  for_ _stripeElementConfig_webkitAutofillClass $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "webkitAutofill" jsv classes
+  classes <- create
+  for_ _stripeElementConfig_baseClass           $ \ v -> toJSVal v >>= \ jsv -> setProp "base"           jsv classes
+  for_ _stripeElementConfig_completeClass       $ \ v -> toJSVal v >>= \ jsv -> setProp "complete"       jsv classes
+  for_ _stripeElementConfig_emptyClass          $ \ v -> toJSVal v >>= \ jsv -> setProp "empty"          jsv classes
+  for_ _stripeElementConfig_focusClass          $ \ v -> toJSVal v >>= \ jsv -> setProp "focus"          jsv classes
+  for_ _stripeElementConfig_invalidClass        $ \ v -> toJSVal v >>= \ jsv -> setProp "invalid"        jsv classes
+  for_ _stripeElementConfig_webkitAutofillClass $ \ v -> toJSVal v >>= \ jsv -> setProp "webkitAutofill" jsv classes
+  classesJsv <- toJSVal classes
 
-  style@(Obj.Object styleJsv) <- Obj.create
-  for_ _stripeElementConfig_baseStyle     $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "base"     jsv style
-  for_ _stripeElementConfig_completeStyle $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "complete" jsv style
-  for_ _stripeElementConfig_emptyStyle    $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "empty"    jsv style
-  for_ _stripeElementConfig_invalidStyle  $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "invalid"  jsv style
+  style <- create
+  for_ _stripeElementConfig_baseStyle     $ \ v -> toJSVal v >>= \ jsv -> setProp "base"     jsv style
+  for_ _stripeElementConfig_completeStyle $ \ v -> toJSVal v >>= \ jsv -> setProp "complete" jsv style
+  for_ _stripeElementConfig_emptyStyle    $ \ v -> toJSVal v >>= \ jsv -> setProp "empty"    jsv style
+  for_ _stripeElementConfig_invalidStyle  $ \ v -> toJSVal v >>= \ jsv -> setProp "invalid"  jsv style
+  styleJsv <- toJSVal style
 
-  o <- Obj.create
-  toJSVal _stripeElementConfig_hideIcon >>= \ jsv -> Obj.setProp "hideIcon" jsv o
-  Obj.setProp "classes" classesJsv o
-  Obj.setProp "style" styleJsv o
-  for_ _stripeElementConfig_iconStyle $ \ v -> toJSVal v >>= \ jsv -> Obj.setProp "iconStyle" jsv o
+  o <- create
+  toJSVal _stripeElementConfig_hideIcon >>= \ jsv -> setProp "hideIcon" jsv o
+  setProp "classes" classesJsv o
+  setProp "style" styleJsv o
+  for_ _stripeElementConfig_iconStyle $ \ v -> toJSVal v >>= \ jsv -> setProp "iconStyle" jsv o
   pure o
 
 instance ToJSVal StripeElementConfig where
-  toJSVal = fmap (\ (Obj.Object jsv) -> jsv) . stripeElementConfigToObject
+  toJSVal = toJSVal <=< stripeElementConfigToObject
 
 instance Default StripeElementConfig where
   def = StripeElementConfig Nothing Nothing Nothing Nothing Nothing Nothing False Nothing Nothing Nothing Nothing Nothing
@@ -153,12 +162,15 @@ data StripeElementError = StripeElementError
   { _stripeElementError_message :: Text
   , _stripeElementError_code :: Text
   }
+  deriving (Eq, Show)
 
 instance FromJSVal StripeElementError where
-  fromJSVal jsv = do
-    _stripeElementError_message <- fromJSValUnchecked =<< jsv ^. js ("message" :: Text)
-    _stripeElementError_code <- fromJSValUnchecked =<< jsv ^. js ("code" :: Text)
-    pure . Just $ StripeElementError {..}
+  fromJSVal =
+    maybeNullOrUndefined' $ \ jsv -> do
+      o <- makeObject jsv
+      _stripeElementError_message <- fromJSValUnchecked =<< unsafeGetProp "message" o
+      _stripeElementError_code    <- fromJSValUnchecked =<< unsafeGetProp "code" o
+      pure StripeElementError {..}
 
 -- |Generic way to bind to an event using @Element.on@.
 getStripeElementEvent :: (IsStripeElement el, MonadJSM m, TriggerEvent t m) => Text -> (JSVal -> JSM a) -> el -> m (Event t a)

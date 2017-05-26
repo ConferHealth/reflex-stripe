@@ -1,12 +1,17 @@
-{ mkDerivation, base, data-default, jsaddle, lens, mtl, reflex-dom
-, stdenv, text, time
+{ mkDerivation, base, containers, data-default, jsaddle, lens, mtl
+, reflex-dom, stdenv, text, time
 }:
 mkDerivation {
   pname = "reflex-stripe";
   version = "0.0.1";
   src = ./.;
+  isLibrary = true;
+  isExecutable = true;
   libraryHaskellDepends = [
-    base data-default jsaddle lens mtl reflex-dom text time
+    base containers data-default jsaddle lens mtl reflex-dom text time
+  ];
+  executableHaskellDepends = [
+    base containers data-default jsaddle lens mtl reflex-dom text time
   ];
   homepage = "https://github.com/ConferHealth/reflex-stripe#readme";
   description = "Reflex integration for the Stripe client library";

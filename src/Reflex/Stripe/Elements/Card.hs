@@ -5,11 +5,15 @@ import Control.Lens ((^.))
 import Control.Lens.TH (makeLenses)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Data.Default (Default, def)
+import Data.Foldable (for_)
 import Data.Functor (void)
 import Data.Monoid ((<>))
 import Data.Text (Text, pack)
-import qualified JavaScript.Object.Internal as Obj
-import Language.Javascript.JSaddle (FromJSVal, fromJSVal, fromJSValUnchecked, JSVal, js, js1, js2, jsFalse, jsTrue, JSM, MonadJSM, liftJSM, ToJSVal, toJSVal)
+import Language.Javascript.JSaddle
+  ( FromJSVal, fromJSVal, fromJSValUnchecked, JSVal, ToJSVal, toJSVal
+  , js1, js2, jsFalse, jsTrue
+  , Object, create, makeObject, unsafeGetProp, setProp, maybeNullOrUndefined'
+  , JSM, MonadJSM, liftJSM )
 import Reflex.Dom
   ( (=:), DomBuilder, DomBuilderSpace, Element, Event, EventResult, elAttr', ffilter, ffor, HasMountStatus, getMountStatus, MountState(Mounted)
   , getMountStatus, Performable, PerformEvent, performEvent_, TriggerEvent, uniqDyn, updated
@@ -28,6 +32,8 @@ data WithPostalCodeField (postalCode :: HasPostalCodeField) a where
   NoPostalCode :: WithPostalCodeField 'PostalCodeDisabled a
 
 deriving instance Functor (WithPostalCodeField postalCode)
+deriving instance Eq a => Eq (WithPostalCodeField postalCode a)
+deriving instance Show a => Show (WithPostalCodeField postalCode a)
 
 -- |Configuration for a Stripe combined-style card element (type @card@)
 data StripeCardElementConfig (postalCode :: HasPostalCodeField) = StripeCardElementConfig
@@ -41,19 +47,21 @@ makeLenses ''StripeCardElementConfig
 
 instance ToJSVal (StripeCardElementConfig pcf) where
   toJSVal (StripeCardElementConfig {..}) = do
-    o@(Obj.Object oJsv) <- stripeElementConfigToObject _stripeCardElementConfig_stripeElementConfig
+    o <- stripeElementConfigToObject _stripeCardElementConfig_stripeElementConfig
 
     case _stripeCardElementConfig_postalCode of
-      PostalCode (Just v) -> do
-        jsv <- toJSVal v
-        value@(Obj.Object valueJsv) <- Obj.create
-        Obj.setProp "postalCode" jsv value
-        Obj.setProp "value" valueJsv o
-        Obj.setProp "hidePostalCode" jsFalse o
+      PostalCode vMay -> do
+        for_ vMay $ \ v -> do
+          jsv <- toJSVal v
+          value <- create
+          setProp "postalCode" jsv value
+          valueJsv <- toJSVal value
+          setProp "value" valueJsv o
+        setProp "hidePostalCode" jsFalse o
       _ ->
-        Obj.setProp "hidePostalCode" jsTrue o
+        setProp "hidePostalCode" jsTrue o
 
-    pure oJsv
+    toJSVal o
 
 instance Default (StripeCardElementConfig 'PostalCodeEnabled) where
   def = StripeCardElementConfig def (PostalCode Nothing)
@@ -95,6 +103,28 @@ stripeCardElement (StripeElements { _stripeElements_object, _stripeElements_next
       _stripeCardElement_stripeElement ^. js1 ("mount" :: Text) ("#" <> elementIdStr)
   pure $ StripeCardElement {..}
 
+-- |A Stripe combined card, expiry, CVV, and no postal code field.
+stripeCardElementWithoutPostalCode
+  :: forall t m.
+     ( DomBuilder t m
+     , MonadIO m, MonadJSM m
+     , PerformEvent t m, MonadJSM (Performable m)
+     , HasMountStatus t m
+     )
+  => StripeElements -> StripeCardElementConfig 'PostalCodeDisabled -> m (StripeCardElement 'PostalCodeDisabled t m)
+stripeCardElementWithoutPostalCode = stripeCardElement
+
+-- |A Stripe combined card, expiry, CVV, and a postal code field.
+stripeCardElementWithPostalCode
+  :: forall t m.
+     ( DomBuilder t m
+     , MonadIO m, MonadJSM m
+     , PerformEvent t m, MonadJSM (Performable m)
+     , HasMountStatus t m
+     )
+  => StripeElements -> StripeCardElementConfig 'PostalCodeEnabled -> m (StripeCardElement 'PostalCodeEnabled t m)
+stripeCardElementWithPostalCode = stripeCardElement
+
 -- |Structure holding details of a change event for a card element.
 data StripeCardElementChange (postalCode :: HasPostalCodeField) = StripeCardElementChange
   { _stripeCardElementChange_empty :: Bool
@@ -109,21 +139,24 @@ data StripeCardElementChange (postalCode :: HasPostalCodeField) = StripeCardElem
   , _stripeCardElementChange_postalCode :: WithPostalCodeField postalCode Text
   -- ^The current value of the postal code subfield, if the combined card field has a postal code field.
   }
+  deriving (Eq, Show)
 
 -- ^Parse some 'JSVal' into a 'StripeCardElementChange', delegating the postal code specific portion to a given function. Used to implement 'FromJSVal' for
 -- both 'StripeCardElementChange' variants.
-parseStripeCardElementChange :: (JSVal -> JSM (WithPostalCodeField postalCode Text)) -> JSVal -> JSM (Maybe (StripeCardElementChange postalCode))
-parseStripeCardElementChange parsePostalCode jsv = do
-  _stripeCardElementChange_empty      <- fromJSValUnchecked =<< jsv ^. js ("empty" :: Text)
-  _stripeCardElementChange_complete   <- fromJSValUnchecked =<< jsv ^. js ("complete" :: Text)
-  _stripeCardElementChange_brand      <- fromJSVal          =<< jsv ^. js ("brand" :: Text)
-  _stripeCardElementChange_error      <- fromJSValUnchecked =<< jsv ^. js ("error" :: Text)
-  _stripeCardElementChange_postalCode <- parsePostalCode jsv
-  pure . Just $ StripeCardElementChange {..}
+parseStripeCardElementChange :: (Object -> JSM (WithPostalCodeField postalCode Text)) -> JSVal -> JSM (Maybe (StripeCardElementChange postalCode))
+parseStripeCardElementChange parsePostalCode =
+  maybeNullOrUndefined' $ \ jsv -> do
+    o <- makeObject jsv
+    _stripeCardElementChange_empty      <- fromJSValUnchecked =<< unsafeGetProp "empty" o
+    _stripeCardElementChange_complete   <- fromJSValUnchecked =<< unsafeGetProp "complete" o
+    _stripeCardElementChange_brand      <- fromJSVal          =<< unsafeGetProp "brand" o
+    _stripeCardElementChange_error      <- fromJSVal          =<< unsafeGetProp "error" o
+    _stripeCardElementChange_postalCode <- parsePostalCode o
+    pure StripeCardElementChange {..}
 
 instance FromJSVal (StripeCardElementChange 'PostalCodeEnabled) where
-  fromJSVal = parseStripeCardElementChange $ \ jsv ->
-    fmap PostalCode $ fromJSValUnchecked =<< jsv ^. js ("value" :: Text) ^. js ("postalCode" :: Text)
+  fromJSVal = parseStripeCardElementChange $ \ o ->
+    fmap PostalCode $ fromJSValUnchecked =<< unsafeGetProp "postalCode" =<< makeObject =<< unsafeGetProp "value" o
 
 -- |Get an Event which fires each time the state of a Stripe combined card element changes.
 getStripeCardElementOnChange
