@@ -25,6 +25,7 @@ library
       base
     , containers
     , data-default
+    , ghcjs-base
     , jsaddle
     , lens
     , mtl
@@ -38,6 +39,7 @@ library
       Reflex.Stripe.Elements.Types
       Reflex.Stripe.Object
       Reflex.Stripe.Types
+      Reflex.Stripe.Utils
   default-language: Haskell2010
 
 executable reflex-stripe-example
@@ -50,6 +52,7 @@ executable reflex-stripe-example
       base
     , containers
     , data-default
+    , ghcjs-base
     , jsaddle
     , lens
     , mtl

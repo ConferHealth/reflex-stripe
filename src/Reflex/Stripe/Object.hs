@@ -1,7 +1,6 @@
 module Reflex.Stripe.Object where
 
 import Control.Concurrent.MVar (MVar, newMVar)
-import Control.Exception (SomeException, handle)
 import Control.Lens ((^.))
 import Control.Monad.Trans (liftIO)
 import Data.Default (Default, def)
@@ -9,13 +8,12 @@ import Data.Foldable (for_)
 import Data.Functor (void)
 import Data.IORef (newIORef, writeIORef, readIORef)
 import Data.Maybe (fromMaybe, listToMaybe)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import Language.Javascript.JSaddle
   ( FromJSVal, fromJSVal, fromJSValUnchecked, ToJSVal, toJSVal
   , function, freeFunction
   , JSVal, MonadJSM, liftJSM
-  , jsg, jsg1, js1, js2, jsNull, create, makeObject, getProp, unsafeGetProp, setProp, maybeNullOrUndefined'
+  , jsg, jsg1, js1, js2, jsNull, create, makeObject, unsafeGetProp, setProp, maybeNullOrUndefined'
   )
 import Reflex.Dom (Event, ffor, Performable, PerformEvent, performEvent_, TriggerEvent, newTriggerEvent)
 import Reflex.Stripe.Elements.Types (IsStripeElement, stripeElement)
@@ -74,10 +72,11 @@ instance FromJSVal StripeCreateTokenResponse where
   fromJSVal =
     maybeNullOrUndefined' $ \ jsv -> do
       o <- makeObject jsv
-      errMay <- fromJSVal =<< getProp "error" o
+      errMay <- fromJSVal =<< unsafeGetProp "error" o
       case errMay of
         Just err -> pure $ StripeCreateTokenError err
-        Nothing -> StripeCreateTokenSuccess <$> (fromJSValUnchecked =<< getProp "token" o)
+        Nothing ->
+          StripeCreateTokenSuccess <$> (fromJSValUnchecked =<< unsafeGetProp "token" o)
 
 -- |Create a token from a given Stripe Element whenever the given event fires. Stripe will collect data from the given element along with any other elements
 -- created from the same 'StripeElements' that it decides are useful.
@@ -91,8 +90,10 @@ createStripeTokens (Stripe { _stripe_object }) el options triggerEvent = do
   performEvent_ . ffor triggerEvent $ \ _ -> liftJSM $ do
     funRef <- liftIO $ newIORef Nothing
     fun <- function $ \ _ _ args -> do
-      result <- fromJSValUnchecked (fromMaybe jsNull $ listToMaybe args)
-      liftIO $ triggerResult result
+      resultMay <- fromJSVal (fromMaybe jsNull $ listToMaybe args)
+      case resultMay of
+        Just result -> liftIO $ triggerResult result
+        Nothing -> void $ jsg ("console" :: Text) ^. js2 ("log" :: Text) ("Failed to decode result of stripe.createToken:" :: Text) args
       maybe (pure ()) freeFunction =<< liftIO (readIORef funRef)
       liftIO $ writeIORef funRef Nothing
     liftIO . writeIORef funRef . Just $ fun

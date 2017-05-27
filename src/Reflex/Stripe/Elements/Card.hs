@@ -149,8 +149,8 @@ parseStripeCardElementChange parsePostalCode =
     o <- makeObject jsv
     _stripeCardElementChange_empty      <- fromJSValUnchecked =<< unsafeGetProp "empty" o
     _stripeCardElementChange_complete   <- fromJSValUnchecked =<< unsafeGetProp "complete" o
-    _stripeCardElementChange_brand      <- fromJSVal          =<< unsafeGetProp "brand" o
-    _stripeCardElementChange_error      <- fromJSVal          =<< unsafeGetProp "error" o
+    _stripeCardElementChange_brand      <- maybeNullOrUndefined' fromJSValUnchecked =<< unsafeGetProp "brand" o
+    _stripeCardElementChange_error      <- maybeNullOrUndefined' fromJSValUnchecked =<< unsafeGetProp "error" o
     _stripeCardElementChange_postalCode <- parsePostalCode o
     pure StripeCardElementChange {..}
 
