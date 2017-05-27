@@ -6,10 +6,6 @@ This is an integration between [Stripe Elements](https://stripe.com/docs/element
 
 As of writing, this depends on a [fork of Reflex-DOM](https://github.com/ConferHealth/reflex-dom) which has not yet been [upstreamed](https://github.com/reflex-frp/reflex-dom/pull/152). If you see complaints about missing `getMountStatus` / `MonadMountStatus`, that's why.
 
-### Compilation warning
-
-This is a work in progress and may not compile.
-
 ## Contributing
 
 Contributions and feedback welcome! File and issue or make a PR.
