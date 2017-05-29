@@ -197,4 +197,29 @@ getStripeElementOnFocus = getStripeElementEvent "focus" (\ _ -> pure ())
 -- |Retrieve an Event which fires whenever the given Stripe Element becomes ready (mounted, fully rendered, and can be focused)
 getStripeElementOnReady :: (IsStripeElement el, MonadJSM m, TriggerEvent t m) => el -> m (Event t ())
 getStripeElementOnReady = getStripeElementEvent "ready" (\ _ -> pure ())
+--
+-- |Structure holding details of a change event for a Stripe element.
+data StripeElementChange = StripeElementChange
+  { _stripeElementChange_empty :: Bool
+  -- ^Whether the element is now empty (has no value)
+  , _stripeElementChange_complete :: Bool
+  -- ^Whether the element is now complete (has a valid value)
+  , _stripeElementChange_error :: Maybe StripeElementError
+  -- ^The current validation error, if any.
+  }
+  deriving (Eq, Show)
+
+instance FromJSVal StripeElementChange where
+  fromJSVal =
+    maybeNullOrUndefined' $ \ jsv -> do
+      o <- makeObject jsv
+      _stripeElementChange_empty      <- fromJSValUnchecked =<< unsafeGetProp "empty" o
+      _stripeElementChange_complete   <- fromJSValUnchecked =<< unsafeGetProp "complete" o
+      _stripeElementChange_error      <- maybeNullOrUndefined' fromJSValUnchecked =<< unsafeGetProp "error" o
+      pure StripeElementChange {..}
+
+-- |Retrieve an Event which fires whenever the given Stripe Element changes.
+-- Note this works for any Stripe element but will not report element type specific details, e.g. postal code.
+getStripeElementOnChange :: (IsStripeElement el, MonadJSM m, TriggerEvent t m) => el -> m (Event t StripeElementChange)
+getStripeElementOnChange = getStripeElementEvent "change" fromJSValUnchecked
 

@@ -29,7 +29,6 @@ dependencies:
   - base
   - containers
   - data-default
-  - ghcjs-base
   - jsaddle
   - lens
   - mtl

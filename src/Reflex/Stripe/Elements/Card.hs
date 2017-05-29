@@ -81,7 +81,7 @@ makeLenses ''StripeCardElement
 instance IsStripeElement (StripeCardElement postalCode t m) where
   stripeElement = _stripeCardElement_stripeElement
 
--- |A Stripe combined card, expiry, CVV, and optionally postal code field.
+-- |A Stripe combined card, expiry, CVC, and optionally postal code field.
 stripeCardElement
   :: forall (postalCode :: HasPostalCodeField) t m.
      ( DomBuilder t m
@@ -141,7 +141,7 @@ data StripeCardElementChange (postalCode :: HasPostalCodeField) = StripeCardElem
   }
   deriving (Eq, Show)
 
--- ^Parse some 'JSVal' into a 'StripeCardElementChange', delegating the postal code specific portion to a given function. Used to implement 'FromJSVal' for
+-- |Parse some 'JSVal' into a 'StripeCardElementChange', delegating the postal code specific portion to a given function. Used to implement 'FromJSVal' for
 -- both 'StripeCardElementChange' variants.
 parseStripeCardElementChange :: (Object -> JSM (WithPostalCodeField postalCode Text)) -> JSVal -> JSM (Maybe (StripeCardElementChange postalCode))
 parseStripeCardElementChange parsePostalCode =
@@ -157,6 +157,10 @@ parseStripeCardElementChange parsePostalCode =
 instance FromJSVal (StripeCardElementChange 'PostalCodeEnabled) where
   fromJSVal = parseStripeCardElementChange $ \ o ->
     fmap PostalCode $ fromJSValUnchecked =<< unsafeGetProp "postalCode" =<< makeObject =<< unsafeGetProp "value" o
+
+instance FromJSVal (StripeCardElementChange 'PostalCodeDisabled) where
+  fromJSVal = parseStripeCardElementChange $ \ _ ->
+    pure NoPostalCode
 
 -- |Get an Event which fires each time the state of a Stripe combined card element changes.
 getStripeCardElementOnChange

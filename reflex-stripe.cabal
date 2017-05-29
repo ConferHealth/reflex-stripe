@@ -25,7 +25,6 @@ library
       base
     , containers
     , data-default
-    , ghcjs-base
     , jsaddle
     , lens
     , mtl
@@ -35,7 +34,11 @@ library
   exposed-modules:
       Reflex.Stripe
       Reflex.Stripe.Elements.Card
+      Reflex.Stripe.Elements.CardCvc
+      Reflex.Stripe.Elements.CardExpiry
+      Reflex.Stripe.Elements.CardNumber
       Reflex.Stripe.Elements.Object
+      Reflex.Stripe.Elements.PostalCode
       Reflex.Stripe.Elements.Types
       Reflex.Stripe.Object
       Reflex.Stripe.Types
@@ -52,7 +55,6 @@ executable reflex-stripe-example
       base
     , containers
     , data-default
-    , ghcjs-base
     , jsaddle
     , lens
     , mtl
