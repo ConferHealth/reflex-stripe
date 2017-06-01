@@ -141,6 +141,8 @@ data StripeCardElementChange (postalCode :: HasPostalCodeField) = StripeCardElem
   }
   deriving (Eq, Show)
 
+makeLenses ''StripeCardElementChange
+
 -- |Parse some 'JSVal' into a 'StripeCardElementChange', delegating the postal code specific portion to a given function. Used to implement 'FromJSVal' for
 -- both 'StripeCardElementChange' variants.
 parseStripeCardElementChange :: (Object -> JSM (WithPostalCodeField postalCode Text)) -> JSVal -> JSM (Maybe (StripeCardElementChange postalCode))

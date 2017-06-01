@@ -2,6 +2,7 @@ module Reflex.Stripe.Object where
 
 import Control.Concurrent.MVar (MVar, newMVar)
 import Control.Lens ((^.))
+import Control.Lens.TH (makeLenses, makePrisms)
 import Control.Monad.Trans (liftIO)
 import Data.Default (Default, def)
 import Data.Foldable (for_)
@@ -28,6 +29,8 @@ data Stripe = Stripe
   -- This is shared with any 'Reflex.Stripe.Elements.Object.StripeElements' that are created using this.
   }
 
+makeLenses ''Stripe
+
 -- |Initialize the Stripe.js object given the publishable API token.
 initStripe :: MonadJSM m => Text -> m Stripe
 initStripe apiToken = liftJSM $ do
@@ -45,6 +48,8 @@ data StripeCreateToken = StripeCreateToken
   , _stripeCreateToken_addressCountry :: Maybe Text
   , _stripeCreateToken_currency :: Maybe Text
   }
+
+makeLenses ''StripeCreateToken
 
 instance Default StripeCreateToken where
   def = StripeCreateToken Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
@@ -67,6 +72,8 @@ data StripeCreateTokenResponse
   = StripeCreateTokenSuccess StripeToken
   | StripeCreateTokenError StripeError
   deriving (Eq, Show)
+
+makePrisms ''StripeCreateTokenResponse
 
 instance FromJSVal StripeCreateTokenResponse where
   fromJSVal =

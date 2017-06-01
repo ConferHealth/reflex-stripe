@@ -1,7 +1,7 @@
 module Reflex.Stripe.Elements.Types where
 
 import Control.Lens ((^.))
-import Control.Lens.TH (makeLenses)
+import Control.Lens.TH (makeLenses, makePrisms)
 import Control.Monad ((<=<))
 import Control.Monad.Trans (liftIO)
 import Data.Default (Default, def)
@@ -70,6 +70,8 @@ data StripeIconStyle
   = StripeIconStyleSolid
   | StripeIconStyleDefault
   deriving (Eq, Show)
+
+makePrisms ''StripeIconStyle
 
 instance ToJSVal StripeIconStyle where
   toJSVal = \ case
@@ -164,6 +166,8 @@ data StripeElementError = StripeElementError
   }
   deriving (Eq, Show)
 
+makeLenses ''StripeElementError
+
 instance FromJSVal StripeElementError where
   fromJSVal =
     maybeNullOrUndefined' $ \ jsv -> do
@@ -208,6 +212,8 @@ data StripeElementChange = StripeElementChange
   -- ^The current validation error, if any.
   }
   deriving (Eq, Show)
+
+makeLenses ''StripeElementChange
 
 instance FromJSVal StripeElementChange where
   fromJSVal =

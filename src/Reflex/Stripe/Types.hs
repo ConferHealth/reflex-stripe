@@ -1,5 +1,6 @@
 module Reflex.Stripe.Types where
 
+import Control.Lens.TH (makeLenses, makePrisms)
 import Data.JSString.Text (textFromJSString)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -22,6 +23,8 @@ data StripeError = StripeError
   }
   deriving (Eq, Show)
 
+makeLenses ''StripeError
+
 instance FromJSVal StripeError where
   fromJSVal =
     maybeNullOrUndefined' $ \ jsv -> do
@@ -40,6 +43,8 @@ data StripeCheck
   | StripeCheckUnavailable
   | StripeCheckUnchecked
   deriving (Eq, Show)
+
+makePrisms ''StripeCheck
 
 instance FromJSVal StripeCheck where
   fromJSVal =
@@ -81,6 +86,8 @@ data StripeCard = StripeCard
   , _stripeCard_tokenizationMethod     :: Maybe Text
   }
   deriving (Eq, Show)
+
+makeLenses ''StripeCard
 
 instance FromJSVal StripeCard where
   fromJSVal =
@@ -127,6 +134,8 @@ data StripeTokenType
   | StripeTokenBankAccount
   deriving (Eq, Show)
 
+makePrisms ''StripeTokenType
+
 instance FromJSVal StripeTokenType where
   fromJSVal =
     maybeNullOrUndefined' $ \ jsv ->
@@ -145,6 +154,8 @@ data StripeToken = StripeToken
   , _stripeToken_used     :: Bool
   }
   deriving (Eq, Show)
+
+makeLenses ''StripeToken
 
 instance FromJSVal StripeToken where
   fromJSVal =

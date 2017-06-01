@@ -2,6 +2,7 @@ module Reflex.Stripe.Elements.Object where
 
 import Control.Concurrent.MVar (MVar)
 import Control.Lens ((^.))
+import Control.Lens.TH (makeLenses)
 import Data.Default (Default, def)
 import Data.Foldable (for_)
 import Data.Text (Text)
@@ -16,6 +17,8 @@ data StripeElementFontConfig = StripeElementFontConfig
   , _stripeElementFontConfig_unicodeRange :: Maybe Text
   , _stripeElementFontConfig_weight :: Maybe Text
   }
+
+makeLenses ''StripeElementFontConfig
 
 instance ToJSVal StripeElementFontConfig where
   toJSVal (StripeElementFontConfig {..}) = do
@@ -36,6 +39,8 @@ data StripeElementsConfig = StripeElementsConfig
   -- ^What locale to use for placeholders and error messages. @Nothing@ means infer locale automatically from the browser.
   }
 
+makeLenses ''StripeElementsConfig
+
 instance ToJSVal StripeElementsConfig where
   toJSVal (StripeElementsConfig {..}) = do
     o <- create
@@ -54,6 +59,8 @@ data StripeElements = StripeElements
   -- ^The next unique identifier to use when creating Stripe Elements, since to mount them we need a document unique identifier to put in the @id@ attribute.
   -- This is inherited from @_stripe_nextElementId@.
   }
+
+makeLenses ''StripeElements
 
 -- |Initialize Stripe Elements using an already initialized Stripe object.
 initStripeElements :: MonadJSM m => Stripe -> StripeElementsConfig -> m StripeElements

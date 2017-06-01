@@ -63,6 +63,8 @@ data StripePostalCodeElementChange = StripePostalCodeElementChange
   }
   deriving (Eq, Show)
 
+makeLenses ''StripePostalCodeElementChange
+
 instance FromJSVal StripePostalCodeElementChange where
   fromJSVal = maybeNullOrUndefined' $ \ jsv -> do
     consoleLog jsv
