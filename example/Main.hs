@@ -10,13 +10,19 @@ import Data.Sequence (Seq, (|>))
 import qualified Data.Sequence as Seq
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Text (Text, pack)
+import GHCJS.DOM (currentDocumentUnchecked)
+import GHCJS.DOM.NonElementParentNode (getElementById)
 import Reflex.Dom
-  ( (=:), Dynamic, Event, MonadWidget, mainWidget, button, current, dyn, el, elAttr, ffor, foldDyn, hold, holdDyn, never, performEvent, switch, tag
-  , text, _textInput_value, textInput )
+  ( (=:), Dynamic, Event, MonadWidget, attachWidget, button, current, dyn, el, elAttr, ffor, foldDyn, hold, holdDyn, never, performEvent, switch, tag
+  , text, _textInput_value, textInput, withJSContextSingleton )
 import Reflex.Stripe
 
 main :: IO ()
-main = mainWidget app
+main =
+  withJSContextSingleton $ \ jsSing -> do
+    doc <- currentDocumentUnchecked
+    appMountpoint <- maybe (fail "couldn't find #app mountpoint") pure =<< getElementById doc ("app" :: Text)
+    attachWidget appMountpoint jsSing app
 
 app :: MonadWidget t m => m ()
 app = do
