@@ -41,6 +41,10 @@ data StripeElementStyle = StripeElementStyle
   }
   deriving (Eq, Show)
 
+instance Default StripeElementStyle where
+  def = StripeElementStyle Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+                           Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+
 makeLenses ''StripeElementStyle
 
 instance ToJSVal StripeElementStyle where
