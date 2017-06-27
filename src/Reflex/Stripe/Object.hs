@@ -16,7 +16,7 @@ import Language.Javascript.JSaddle
   , JSVal, MonadJSM, liftJSM
   , jsg, jsg1, js1, js2, jsNull, create, makeObject, unsafeGetProp, setProp, maybeNullOrUndefined'
   )
-import Reflex.Dom (Behavior, Event, ffor, Performable, PerformEvent, performEvent_, TriggerEvent, newTriggerEvent, tag)
+import Reflex.Dom (Event, ffor, Performable, PerformEvent, performEvent_, TriggerEvent, newTriggerEvent)
 import Reflex.Stripe.Elements.Types (IsStripeElement, stripeElement)
 import Reflex.Stripe.Types (StripeError, StripeToken)
 
@@ -91,10 +91,10 @@ instance FromJSVal StripeCreateTokenResponse where
 -- Returns an 'Event' which will fire when Stripe returns a response.
 createStripeTokens
   :: (IsStripeElement el, MonadJSM m, PerformEvent t m, MonadJSM (Performable m), TriggerEvent t m)
-  => Stripe -> el -> Behavior t StripeCreateToken -> Event t () -> m (Event t StripeCreateTokenResponse)
-createStripeTokens (Stripe { _stripe_object }) el currentOptions triggerEvent = do
+  => Stripe -> Event t (el, StripeCreateToken) -> m (Event t StripeCreateTokenResponse)
+createStripeTokens (Stripe { _stripe_object }) triggerEvent = do
   (resultEvent, triggerResult) <- newTriggerEvent
-  performEvent_ . ffor (tag currentOptions triggerEvent) $ \ options -> liftJSM $ do
+  performEvent_ . ffor triggerEvent $ \ (el, options) -> liftJSM $ do
     funRef <- liftIO $ newIORef Nothing
     fun <- function $ \ _ _ args -> do
       resultMay <- fromJSVal (fromMaybe jsNull $ listToMaybe args)
