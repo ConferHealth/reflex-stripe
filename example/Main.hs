@@ -76,7 +76,7 @@ combinedWithPostalCode stripe = do
     stripeElements <- initStripeElements stripe def
     sce       <- stripeCardElementWithPostalCode stripeElements def
     clicks    <- button "Tokenize"
-    responses <- createStripeTokens stripe sce def clicks
+    responses <- createStripeTokens stripe sce (pure def) clicks
     blurs     <- getStripeElementOnBlur sce
     focuses   <- getStripeElementOnFocus sce
     readies   <- getStripeElementOnReady sce
@@ -99,7 +99,7 @@ combinedWithoutPostalCode stripe = do
     stripeElements <- initStripeElements stripe def
     sce       <- stripeCardElementWithoutPostalCode stripeElements def
     clicks    <- button "Tokenize"
-    responses <- createStripeTokens stripe sce def clicks
+    responses <- createStripeTokens stripe sce (pure def) clicks
     blurs     <- getStripeElementOnBlur sce
     focuses   <- getStripeElementOnFocus sce
     readies   <- getStripeElementOnReady sce
@@ -177,7 +177,7 @@ separated stripe = do
       ]
 
   clicks <- button "Tokenize"
-  responses <- createStripeTokens stripe numberElement def clicks
+  responses <- createStripeTokens stripe numberElement (pure def) clicks
   timeAndDisplayEvents $ mconcat
     [ newNumberEvents
     , newExpiryEvents
