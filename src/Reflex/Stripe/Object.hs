@@ -1,6 +1,7 @@
 module Reflex.Stripe.Object where
 
-import Control.Concurrent.MVar (MVar, newMVar)
+import Control.Concurrent (forkIO)
+import Control.Concurrent.MVar (MVar, newMVar, newEmptyMVar, putMVar, takeMVar)
 import Control.Lens ((^.))
 import Control.Lens.TH (makeLenses, makePrisms)
 import Control.Monad.Trans (liftIO)
@@ -10,15 +11,16 @@ import Data.Functor (void)
 import Data.IORef (newIORef, writeIORef, readIORef)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
+import Data.Traversable (for, traverse)
 import Language.Javascript.JSaddle
   ( FromJSVal, fromJSVal, fromJSValUnchecked, ToJSVal, toJSVal
   , function, freeFunction
   , JSVal, MonadJSM, liftJSM
   , jsg, jsg1, js1, js2, jsNull, create, makeObject, unsafeGetProp, setProp, maybeNullOrUndefined'
   )
-import Reflex.Dom (Event, ffor, Performable, PerformEvent, performEvent_, TriggerEvent, newTriggerEvent)
+import Reflex.Dom (Event, ffor, Performable, PerformEvent, performEventAsync, TriggerEvent)
 import Reflex.Stripe.Elements.Types (IsStripeElement, stripeElement)
-import Reflex.Stripe.Types (StripeError, StripeToken)
+import Reflex.Stripe.Types (StripeError(StripeError), StripeToken)
 
 -- |Shared state after initializing the Stripe.js library.
 data Stripe = Stripe
@@ -88,22 +90,31 @@ instance FromJSVal StripeCreateTokenResponse where
 -- |Create a token from a given Stripe Element whenever the given event fires. Stripe will collect data from the given element along with any other elements
 -- created from the same 'StripeElements' that it decides are useful.
 --
--- Returns an 'Event' which will fire when Stripe returns a response.
+-- The parameters of the create token request are wrapped in a 'Traversable' @f@, which you can use to make multiple requests (e.g. @[]@), side channel values
+-- from the request to the response (@(,) a@) or just make a plain request (@Identity@).
+--
+-- Returns an 'Event' which will fire when Stripe returns response(s). Note that if there is a failure parsing a response from stripe, this will synthesize
+-- a 'StripeCreateTokenError' with type of @invalid_response_error@, and log the unparsed response on the console.
 createStripeTokens
-  :: (IsStripeElement el, MonadJSM m, PerformEvent t m, MonadJSM (Performable m), TriggerEvent t m)
-  => Stripe -> Event t (el, StripeCreateToken) -> m (Event t StripeCreateTokenResponse)
-createStripeTokens (Stripe { _stripe_object }) triggerEvent = do
-  (resultEvent, triggerResult) <- newTriggerEvent
-  performEvent_ . ffor triggerEvent $ \ (el, options) -> liftJSM $ do
-    funRef <- liftIO $ newIORef Nothing
-    fun <- function $ \ _ _ args -> do
-      resultMay <- fromJSVal (fromMaybe jsNull $ listToMaybe args)
-      case resultMay of
-        Just result -> liftIO $ triggerResult result
-        Nothing -> void $ jsg ("console" :: Text) ^. js2 ("log" :: Text) ("Failed to decode result of stripe.createToken:" :: Text) args
-      maybe (pure ()) freeFunction =<< liftIO (readIORef funRef)
-      liftIO $ writeIORef funRef Nothing
-    liftIO . writeIORef funRef . Just $ fun
-    void $ (_stripe_object ^. js2 ("createToken" :: Text) (stripeElement el) options) ^. js1 ("then" :: Text) fun
-  pure resultEvent
+  :: (IsStripeElement el, PerformEvent t m, TriggerEvent t m, MonadJSM m, MonadJSM (Performable m), Traversable f)
+  => Stripe -> Event t (f (el, StripeCreateToken)) -> m (Event t (f StripeCreateTokenResponse))
+createStripeTokens (Stripe { _stripe_object }) requestses =
+  performEventAsync $ ffor requestses $ \ requests callback -> do
+    responseRefs <- for requests $ \ (el, options) -> do
+      responseRef <- liftIO newEmptyMVar
+      funRef <- liftIO $ newIORef Nothing
+      fun <- liftJSM $ function $ \ _ _ args -> do
+        resultMay <- fromJSVal (fromMaybe jsNull $ listToMaybe args)
+        case resultMay of
+          Just result ->
+            liftIO $ putMVar responseRef result
+          Nothing -> do
+            liftJSM . void $ jsg ("console" :: Text) ^. js2 ("log" :: Text) ("Failed to decode result of stripe.createToken:" :: Text) args
+            liftIO . putMVar responseRef . StripeCreateTokenError $ StripeError "invalid_response_error" Nothing Nothing Nothing Nothing Nothing
+        maybe (pure ()) freeFunction =<< liftIO (readIORef funRef)
+        liftIO $ writeIORef funRef Nothing
+      liftIO . writeIORef funRef . Just $ fun
+      liftJSM . void $ (_stripe_object ^. js2 ("createToken" :: Text) (stripeElement el) options) ^. js1 ("then" :: Text) fun
+      pure responseRef
+    void . liftIO . forkIO $ callback =<< traverse takeMVar responseRefs
 

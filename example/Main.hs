@@ -5,6 +5,7 @@ import Control.Monad.Trans (liftIO)
 import Data.Default (def)
 import Data.Foldable (for_)
 import Data.Functor ((<$), void)
+import Data.Functor.Identity (Identity(Identity, runIdentity))
 import Data.Monoid ((<>))
 import Data.Sequence (Seq, (|>))
 import qualified Data.Sequence as Seq
@@ -76,7 +77,7 @@ combinedWithPostalCode stripe = do
     stripeElements <- initStripeElements stripe def
     sce       <- stripeCardElementWithPostalCode stripeElements def
     clicks    <- button "Tokenize"
-    responses <- createStripeTokens stripe $ (sce, def) <$ clicks
+    responses <- createStripeTokens stripe $ Identity (sce, def) <$ clicks
     blurs     <- getStripeElementOnBlur sce
     focuses   <- getStripeElementOnFocus sce
     readies   <- getStripeElementOnReady sce
@@ -88,7 +89,7 @@ combinedWithPostalCode stripe = do
       , ["focused "] <$ focuses
       , ((:[]) . ("change: " <>) . pack . show) <$> changes
       , ["ready"] <$ readies
-      , ((:[]) . ("response: " <>) . pack . show) <$> responses
+      , ((:[]) . ("response: " <>) . pack . show . runIdentity) <$> responses
       ]
 
   timeAndDisplayEvents newEvents
@@ -99,7 +100,7 @@ combinedWithoutPostalCode stripe = do
     stripeElements <- initStripeElements stripe def
     sce       <- stripeCardElementWithoutPostalCode stripeElements def
     clicks    <- button "Tokenize"
-    responses <- createStripeTokens stripe $ (sce, def) <$ clicks
+    responses <- createStripeTokens stripe $ Identity (sce, def) <$ clicks
     blurs     <- getStripeElementOnBlur sce
     focuses   <- getStripeElementOnFocus sce
     readies   <- getStripeElementOnReady sce
@@ -111,7 +112,7 @@ combinedWithoutPostalCode stripe = do
       , ["focused "] <$ focuses
       , ((:[]) . ("change: " <>) . pack . show) <$> changes
       , ["ready"] <$ readies
-      , ((:[]) . ("response: " <>) . pack . show) <$> responses
+      , ((:[]) . ("response: " <>) . pack . show . runIdentity) <$> responses
       ]
 
   timeAndDisplayEvents newEvents
@@ -177,12 +178,12 @@ separated stripe = do
       ]
 
   clicks <- button "Tokenize"
-  responses <- createStripeTokens stripe $ (numberElement, def) <$ clicks
+  responses <- createStripeTokens stripe $ Identity (numberElement, def) <$ clicks
   timeAndDisplayEvents $ mconcat
     [ newNumberEvents
     , newExpiryEvents
     , newCvcEvents
     , newPostalCodeEvents
     , ["clicked"] <$ clicks
-    , ((:[]) . ("response: " <>) . pack . show) <$> responses
+    , ((:[]) . ("response: " <>) . pack . show . runIdentity) <$> responses
     ]
