@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.17.0.
+-- This file has been generated from package.yaml by hpack version 0.18.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -44,12 +44,12 @@ library
       Reflex.Stripe.Object
       Reflex.Stripe.Types
       Reflex.Stripe.Utils
+  other-modules:
+      Paths_reflex_stripe
   default-language: Haskell2010
 
 executable reflex-stripe-example
   main-is: Main.hs
-  hs-source-dirs:
-      example
   default-extensions: DataKinds DeriveFunctor FlexibleContexts FlexibleInstances GADTs LambdaCase NamedFieldPuns OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TemplateHaskell TypeFamilies RecursiveDo TupleSections
   ghc-options: -Wall -O2 -threaded -rtsopts -with-rtsopts=-N
   build-depends:
@@ -64,4 +64,10 @@ executable reflex-stripe-example
     , text
     , time
     , reflex-stripe
+  if impl(ghcjs)
+    hs-source-dirs:
+        example
+  else
+    hs-source-dirs:
+        example-ghc
   default-language: Haskell2010
